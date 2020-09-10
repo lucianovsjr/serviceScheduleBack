@@ -19,7 +19,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         password = validated_data.pop('password')        
 
         user = User(**validated_data)
-        user.username = validated_data['email']
+        # user.username = validated_data['email']
         user.set_password(password)
         user.save()
         
@@ -36,3 +36,9 @@ class PerfilSerializer(serializers.ModelSerializer):
     class Meta:
         model = Perfil
         fields = ['name', 'email', 'provider', 'fantasy_name', 'profession']
+
+
+class PerfilUpdateSerializer(serializers.Serializer):
+    name = serializers.CharField(source='user.get_full_name')
+
+    

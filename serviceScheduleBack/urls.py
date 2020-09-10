@@ -7,7 +7,7 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView
 )
 
-from .access.views import UserViewSet, UserRegister, PerfilViewSet
+from .access.views import UserViewSet, UserRegister, PerfilViewSet, PerfilUpdate
 
 
 router = routers.DefaultRouter()
@@ -17,6 +17,7 @@ router.register(r'perfil', PerfilViewSet)
 urlpatterns = [
     path('api/', include(router.urls)),
 
+    path('api/perfil/update', PerfilUpdate.as_view(), name='perfil_update'),
     path('api/users/register', UserRegister.as_view(), name='user_register'),
     
     path('api/token', TokenObtainPairView.as_view(), name='token_obtain_pair'),

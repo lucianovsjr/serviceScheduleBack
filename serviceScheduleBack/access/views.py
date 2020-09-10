@@ -1,8 +1,14 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
-from rest_framework import viewsets, permissions, generics
+from rest_framework import viewsets, permissions, generics, status
+from rest_framework.response import Response
 
-from .serializers import UserSerializer, RegisterSerializer, PerfilSerializer
+from .serializers import (
+    UserSerializer,
+    RegisterSerializer,
+    PerfilSerializer,
+    PerfilUpdateSerializer
+)
 from .models import Perfil
 
 
@@ -24,4 +30,27 @@ class PerfilViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Perfil.objects.filter(id=self.request.user.id)
+        return Perfil.objects.filter(user=self.request.user)
+
+class PerfilUpdate(generics.UpdateAPIView):
+    queryset = Perfil.objects.all()
+    serializer_class = PerfilUpdateSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def update(self, request, *args, **kwargs):
+        user = self.request.user
+        user.first_name = request.data['name']
+        user.save()        
+        
+        perfil = self.request.user.user_perfil
+        perfil.fantasy_name = request.data['fantasy_name']
+        perfil.profession = request.data['profession']
+        perfil.save()
+
+        content = {
+            'name': user.first_name,
+            'fantasy_name': perfil.fantasy_name,
+            'profession': perfil.profession
+        }
+
+        return Response(content, status=status.HTTP_200_OK)
