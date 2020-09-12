@@ -7,12 +7,16 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView
 )
 
-from .access.views import UserViewSet, UserRegister, PerfilViewSet, PerfilUpdate
+from serviceScheduleBack.access.views import (UserViewSet, UserRegister,
+                                              PerfilViewSet, PerfilUpdate)
+
+from serviceScheduleBack.schedule.views import ScheduleViewset
 
 
 router = routers.DefaultRouter()
 router.register(r'users', UserViewSet)
 router.register(r'perfil', PerfilViewSet)
+router.register(r'schedules', ScheduleViewset)
 
 urlpatterns = [
     path('api/', include(router.urls)),
@@ -23,6 +27,8 @@ urlpatterns = [
     path('api/token', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/token/verify', TokenVerifyView.as_view(), name='token_verify'),
+
+    path('api/auth/', include('rest_framework.urls', namespace='rest_framework')),
 
     path('admin/', admin.site.urls),
 ]
