@@ -45,6 +45,14 @@ class Schedule(models.Model):
                 date_time = date_time.replace(hour=hour_start,
                                 minute=minute_start)
 
+    def appointments_exists(self):
+        appointments = Appointment.objects.filter(
+            date_time__date__range=(self.date_start, self.date_end),
+            date_time__time__range=(self.hours_start, self.hours_end)
+        )
+    
+        return appointments.count() > 0
+
 
 class Event(models.Model):
     schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE)
@@ -83,7 +91,7 @@ class Event(models.Model):
             appointment.event = self
             appointment.save()
 
-    def appointments_event_exists(self):
+    def appointments_exists(self):
         appointments = Appointment.objects.exclude(event=None)
         if self.date:
             appointments = appointments.filter(date_time__date=self.date)

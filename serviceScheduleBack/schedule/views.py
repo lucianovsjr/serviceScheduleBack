@@ -5,7 +5,6 @@ from rest_framework.response import Response
 
 from .models import Schedule, Event
 from .serializers import ScheduleSerializer, EventSerializer
-from .mixin import appointments_schedule_exists
 
 
 class ScheduleViewSet(viewsets.ModelViewSet):
@@ -20,15 +19,6 @@ class ScheduleViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         headers = self.get_success_headers(serializer.data)
-        
-        if not appointments_schedule_exists(
-            serializer.validated_data['date_start'],
-            serializer.validated_data['date_end'],
-            serializer.validated_data['hours_start'],
-            serializer.validated_data['hours_end']
-            ):
-            return Response({'msg': 'Período já possui agendamentos'},
-                status=status.HTTP_202_ACCEPTED, headers=headers)
 
         schedule = Schedule(
             provider=self.request.user,
@@ -38,6 +28,11 @@ class ScheduleViewSet(viewsets.ModelViewSet):
             hours_end=serializer.validated_data['hours_end'],
             time_range=serializer.validated_data['time_range'],
         )
+
+        if schedule.appointments_exists():
+            return Response({'msg': 'Período já possui agendamentos'},
+                status=status.HTTP_202_ACCEPTED, headers=headers)
+
         schedule.save()
         schedule.create_appointments()
         return Response(serializer.validated_data, status=status.HTTP_201_CREATED, headers=headers)
@@ -56,7 +51,7 @@ class EventViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)            
 
         event = Event(**serializer.validated_data)
-        if event.appointments_event_exists():
+        if event.appointments_exists():
             return Response({'msg': 'Período já possui evento'},
                 status=status.HTTP_202_ACCEPTED, headers=headers)
         event.save()
