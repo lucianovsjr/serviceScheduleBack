@@ -1,19 +1,17 @@
 from django.shortcuts import render
 
-from rest_framework import status
-from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import status, permissions, viewsets
 from rest_framework.response import Response
 
-from .models import Schedule
-from .serializers import ScheduleSerializer
-from .mixin import check_period
+from .models import Schedule, Event
+from .serializers import ScheduleSerializer, EventSerializer
+from .mixin import appointments_schedule_exists
 
 
-class ScheduleViewset(ModelViewSet):
+class ScheduleViewSet(viewsets.ModelViewSet):
     queryset = Schedule.objects.all()
     serializer_class = ScheduleSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         return Schedule.objects.filter(provider=self.request.user)
@@ -23,7 +21,7 @@ class ScheduleViewset(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         headers = self.get_success_headers(serializer.data)
         
-        if not check_period(
+        if not appointments_schedule_exists(
             serializer.validated_data['date_start'],
             serializer.validated_data['date_end'],
             serializer.validated_data['hours_start'],
@@ -43,3 +41,43 @@ class ScheduleViewset(ModelViewSet):
         schedule.save()
         schedule.create_appointments()
         return Response(serializer.validated_data, status=status.HTTP_201_CREATED, headers=headers)
+
+
+class EventViewSet(viewsets.ModelViewSet):
+    serializer_class = EventSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Event.objects.filter(schedule__provider=self.request.user)
+
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        headers = self.get_success_headers(serializer.data)            
+
+        event = Event(**serializer.validated_data)
+        if event.appointments_event_exists():
+            return Response({'msg': 'Período já possui evento'},
+                status=status.HTTP_202_ACCEPTED, headers=headers)
+        event.save()
+
+        event.update_appointments()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def update(self, request, pk):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        instance.clear_appointment()
+        instance.update_appointments()
+
+        return Response(serializer.data)
+
+    def destroy(self, request, pk):
+        instance = self.get_object()
+        instance.clear_appointment()           
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

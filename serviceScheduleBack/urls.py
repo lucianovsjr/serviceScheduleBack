@@ -10,13 +10,14 @@ from rest_framework_simplejwt.views import (
 from serviceScheduleBack.access.views import (UserViewSet, UserRegister,
                                               PerfilViewSet, PerfilUpdate)
 
-from serviceScheduleBack.schedule.views import ScheduleViewset
+from serviceScheduleBack.schedule.views import ScheduleViewSet, EventViewSet
 
 
 router = routers.DefaultRouter()
 router.register(r'users', UserViewSet)
 router.register(r'perfil', PerfilViewSet)
-router.register(r'schedules', ScheduleViewset)
+router.register(r'schedules', ScheduleViewSet)
+router.register(r'events', EventViewSet, 'events')
 
 urlpatterns = [
     path('api/', include(router.urls)),

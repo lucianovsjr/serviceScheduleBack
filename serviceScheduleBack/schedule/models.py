@@ -46,27 +46,6 @@ class Schedule(models.Model):
                                 minute=minute_start)
 
 
-class Appointment(models.Model):
-    schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE)
-    provider = models.ForeignKey('auth.User', verbose_name='Provider',
-                                on_delete=models.CASCADE,
-                                related_name='appointment_provider')
-    user = models.ForeignKey('auth.User', verbose_name='Usuário',
-                                on_delete=models.CASCADE,
-                                related_name='appointment_user',
-                                null=True)
-    date_time = models.DateTimeField('Data')
-    canceled_at = models.DateTimeField(null=True)
-    loose_client = models.CharField('Cliente avulso', max_length=30)
-    time_range = models.IntegerField('Tempo de atendimento', default=0)
-
-    def __str__(self):
-        return '{}'.format(self.date_time)
-
-    def available(self):
-        return not self.user
-
-
 class Event(models.Model):
     schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE)
     name = models.CharField('Nome', max_length=30)
@@ -75,3 +54,70 @@ class Event(models.Model):
     hours_start = models.TimeField('Hora inicial')
     hours_end = models.TimeField('Hora Final')
     all_day = models.BooleanField('Todo dia', default=False)
+
+    def week_days(self):
+        ret_week = []
+        for day in enumerate(self.week):
+            if day[1] == '1':
+                ret_week.append(day[0] + 1)
+        
+        return ret_week
+
+    def clear_appointment(self):
+        for appointment in self.appointment_event.all():
+            appointment.event = None
+            appointment.save()
+
+    def update_appointments(self):        
+        appointments = self.schedule.appointment_schedule.all()        
+        if self.date:
+            appointments = appointments.filter(date_time__date=self.date)
+        else:
+            appointments = appointments.filter(
+                    date_time__week_day__in=self.week_days())
+        if not self.all_day:
+            appointments = appointments.filter(
+                    date_time__time__range=(self.hours_start, self.hours_end))
+
+        for appointment in appointments:
+            appointment.event = self
+            appointment.save()
+
+    def appointments_event_exists(self):
+        appointments = Appointment.objects.exclude(event=None)
+        if self.date:
+            appointments = appointments.filter(date_time__date=self.date)
+        else:
+            appointments = appointments.filter(
+                    date_time__week_day__in=self.week_days)
+        if not self.all_day:
+            appointments = appointments.filter(
+                    date_time__time__range=(self.hours_start, self.hours_end))
+
+        return appointments.count() > 0
+
+
+class Appointment(models.Model):
+    schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE,
+                                related_name='appointment_schedule')
+    provider = models.ForeignKey('auth.User', verbose_name='Provider',
+                                on_delete=models.CASCADE,
+                                related_name='appointment_provider')
+    user = models.ForeignKey('auth.User', verbose_name='Usuário',
+                                on_delete=models.CASCADE,
+                                related_name='appointment_user',
+                                null=True, blank=True)
+    date_time = models.DateTimeField('Data')
+    canceled_at = models.DateTimeField(null=True, blank=True)
+    loose_client = models.CharField('Cliente avulso', max_length=30,
+                                    blank=True)
+    time_range = models.IntegerField('Tempo de atendimento', default=0)
+    event = models.ForeignKey(Event, on_delete=models.DO_NOTHING,
+                            related_name='appointment_event',
+                            null=True)
+
+    def __str__(self):
+        return '{}'.format(self.date_time)
+
+    def available(self):
+        return not self.user
