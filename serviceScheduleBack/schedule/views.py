@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.http import Http404
 
 from rest_framework import status, permissions, viewsets
 from rest_framework.response import Response
@@ -45,6 +46,18 @@ class EventViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Event.objects.filter(schedule__provider=self.request.user)
 
+    def retrieve(self, request, pk):
+        queryset = self.get_queryset()
+        try:            
+            schedule = Schedule.objects.get(pk=pk)
+        except Schedule.DoesNotExist:
+            raise Http404("Não existe agendamento.")
+
+        events = queryset.filter(schedule=schedule)        
+        serializer = EventSerializer(events, many=True)
+
+        return Response(serializer.data)
+
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -63,7 +76,7 @@ class EventViewSet(viewsets.ModelViewSet):
     def update(self, request, pk):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
-        serializer.is_valid(raise_exception=True)
+        serializer.is_valid(raise_exception=True)        
         serializer.save()
 
         instance.clear_appointment()

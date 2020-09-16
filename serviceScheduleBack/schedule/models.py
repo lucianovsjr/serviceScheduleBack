@@ -58,12 +58,19 @@ class Event(models.Model):
     schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE)
     name = models.CharField('Nome', max_length=30)
     week = models.CharField('Semana', max_length=7)
-    date = models.DateField('Data')
+    date = models.DateField('Data', null=True)
     hours_start = models.TimeField('Hora inicial')
     hours_end = models.TimeField('Hora Final')
     all_day = models.BooleanField('Todo dia', default=False)
 
     def week_days(self):
+        ret_week = []
+        for day in enumerate(self.week):
+            ret_week.append(day[1] == '1')            
+        
+        return ret_week
+    
+    def _week_days(self):
         ret_week = []
         for day in enumerate(self.week):
             if day[1] == '1':
@@ -82,7 +89,7 @@ class Event(models.Model):
             appointments = appointments.filter(date_time__date=self.date)
         else:
             appointments = appointments.filter(
-                    date_time__week_day__in=self.week_days())
+                    date_time__week_day__in=self._week_days())
         if not self.all_day:
             appointments = appointments.filter(
                     date_time__time__range=(self.hours_start, self.hours_end))
@@ -97,7 +104,7 @@ class Event(models.Model):
             appointments = appointments.filter(date_time__date=self.date)
         else:
             appointments = appointments.filter(
-                    date_time__week_day__in=self.week_days)
+                    date_time__week_day__in=self._week_days())
         if not self.all_day:
             appointments = appointments.filter(
                     date_time__time__range=(self.hours_start, self.hours_end))

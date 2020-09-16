@@ -11,6 +11,8 @@ class ScheduleSerializer(serializers.ModelSerializer):
 
 
 class EventSerializer(serializers.ModelSerializer):
+    week_days = serializers.ListField(read_only=True)
+    
     class Meta:
         model = Event
         fields = '__all__'
