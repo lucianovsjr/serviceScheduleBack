@@ -54,3 +54,9 @@ class PerfilUpdate(generics.UpdateAPIView):
         }
 
         return Response(content, status=status.HTTP_200_OK)
+
+
+class ProviderViewSet(generics.ListAPIView):
+    queryset = Perfil.objects.filter(provider=True)
+    serializer_class = PerfilSerializer
+    permission_classes = [permissions.IsAuthenticated]

@@ -30,12 +30,13 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class PerfilSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(source='user.id')
     name = serializers.CharField(source='user.get_full_name')
     email = serializers.CharField(source='user.email')
     
     class Meta:
         model = Perfil
-        fields = ['name', 'email', 'provider', 'fantasy_name', 'profession']
+        fields = ['id', 'name', 'email', 'provider', 'fantasy_name', 'profession']
 
 
 class PerfilUpdateSerializer(serializers.Serializer):

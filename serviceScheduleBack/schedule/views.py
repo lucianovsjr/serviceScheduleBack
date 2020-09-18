@@ -1,11 +1,14 @@
+from django.utils import timezone
 from django.shortcuts import render
-from django.http import Http404
+from django.http import Http404, HttpResponse, JsonResponse
 
-from rest_framework import status, permissions, viewsets
+from rest_framework import status, permissions, viewsets, generics
 from rest_framework.response import Response
 
-from .models import Schedule, Event
-from .serializers import ScheduleSerializer, EventSerializer
+from .models import Schedule, Event, Appointment
+from .serializers import (ScheduleSerializer, EventSerializer,
+        ProviderMonthSerializer, AppointmentMonthSerializer,
+        MyAppointmentSerializer)
 
 
 class ScheduleViewSet(viewsets.ModelViewSet):
@@ -89,3 +92,112 @@ class EventViewSet(viewsets.ModelViewSet):
         instance.clear_appointment()           
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ProviderMonthViewSet(generics.RetrieveAPIView):    
+    serializer_class = ProviderMonthSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def retrieve(self, request, pk):
+        provider_months = []
+        appointments = Appointment.objects.filter(provider=pk,
+            event=None).order_by('date_time')        
+        for appointment in appointments:
+            exists = False
+            date_time = str(appointment.date_time.year) + str(appointment.date_time.month)
+            for provider_month in provider_months:                
+                if date_time == provider_month['date']:
+                    exists = True
+                    provider_month['vacancies_total'] += 1
+                    if appointment.date_time.hour >= 6:
+                        provider_month['vacancies_morning'] += 1
+                    elif appointment.date_time.hour >= 12:
+                        provider_month['vacancies_afternoon'] += 1
+                    elif appointment.date_time.hour >= 18 or \
+                        appointment.date_time.hour < 6:
+                        provider_month['vacancies_night'] += 1
+                    break
+            if not exists:
+                provider_months.append({
+                    'date': date_time,                    
+                    'vacancies_total': 0,
+                    'vacancies_morning': 0,
+                    'vacancies_afternoon': 0,
+                    'vacancies_night': 0
+                })                
+        
+        serializer = ProviderMonthSerializer(provider_months, many=True)
+        return Response(serializer.data)
+
+class AppointmentMonthViewSet(generics.ListAPIView):
+    serializer_class = AppointmentMonthSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request):
+        year = request.query_params['year']
+        month = request.query_params['month']
+        provider_id = request.query_params['providerId']
+        
+        appointments = Appointment.objects.filter(date_time__year=year,
+            date_time__month=month, provider=provider_id, event=None)
+        
+        appointments_month = []
+        for appointment in appointments:            
+            appointments_month.append({
+                'id': appointment.id,
+                'date': appointment.date_time.date(),
+                'time': appointment.date_time.time(),
+                'canceled_at': appointment.canceled_at,
+                'user_id': appointment.user.id if appointment.user else None,
+                'loose_client': appointment.loose_client,
+                'status': appointment.status(self.request.user)
+            })
+        
+        serializer = AppointmentMonthSerializer(appointments_month, many=True)
+        return Response(serializer.data)
+
+
+class AppointmentUpdateStatusViewSet(generics.UpdateAPIView):
+    serializer_class = AppointmentMonthSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def update(self, request, pk=None):
+        try:
+            appointment = Appointment.objects.get(pk=pk)
+        except Appointment.DoesNotExist:
+            return HttpResponse(status=404)
+        
+        if appointment.user in (None, self.request.user):
+            if appointment.user == self.request.user \
+                and appointment.canceled_at == None:
+                appointment.canceled_at = timezone.now()
+            else:
+                appointment.user = self.request.user
+                appointment.canceled_at = None        
+            appointment.save()
+
+            serializer = AppointmentMonthSerializer(appointment)
+            return JsonResponse(serializer.data)
+        
+        return JsonResponse(status=400)
+
+
+class MyAppointmentViewSet(generics.ListAPIView):
+    serializer_class = MyAppointmentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request):
+        appointments = Appointment.objects.filter(user=self.request.user,
+            canceled_at=None)
+        appointments_ = []
+        for appointment in appointments:
+            appointments_.append({
+                'id': appointment.id,
+                'date_time': appointment.date_time,
+                'canceled_at': appointment.canceled_at,
+                'provider_id': appointment.provider.id,
+                'provider_name': appointment.provider.get_full_name()
+            })
+
+        serializer = MyAppointmentSerializer(appointments_, many=True)
+        return JsonResponse(serializer.data, safe=False)
