@@ -33,7 +33,8 @@ class Schedule(models.Model):
             appointment = Appointment(
                 schedule=self,
                 provider=self.provider,
-                date_time=date_time
+                date_time=date_time,
+                time_range=self.time_range
             )
             appointment.save()
 
@@ -114,7 +115,8 @@ class Event(models.Model):
 
 class Appointment(models.Model):
     schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE,
-                                related_name='appointment_schedule')
+                                related_name='appointment_schedule',
+                                null=True)
     provider = models.ForeignKey('auth.User', verbose_name='Provider',
                                 on_delete=models.CASCADE,
                                 related_name='appointment_provider')
@@ -147,3 +149,20 @@ class Appointment(models.Model):
             return 'unavailable'
 
         return 'available'
+
+    def get_hours_start(self):
+        return self.date_time.time()
+
+    def get_hours_end(self):
+        return (self.date_time + timedelta(minutes=self.time_range)).time()
+
+    def appointment_exist(self):
+        appointments = Appointment.objects.filter(
+            date_time__date=self.date_time.date(),
+            date_time__time__range=(
+                self.date_time.time(),
+                (self.date_time + timedelta(minutes=self.time_range)).time()
+            )
+        )        
+
+        return appointments.count() > 0

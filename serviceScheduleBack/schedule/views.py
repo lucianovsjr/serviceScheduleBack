@@ -6,14 +6,12 @@ from rest_framework import status, permissions, viewsets, generics
 from rest_framework.response import Response
 
 from .models import Schedule, Event, Appointment
-from .serializers import (ScheduleSerializer, EventSerializer,
-        ProviderMonthSerializer, AppointmentMonthSerializer,
-        MyAppointmentSerializer)
+from serviceScheduleBack.schedule import serializers
 
 
 class ScheduleViewSet(viewsets.ModelViewSet):
     queryset = Schedule.objects.all()
-    serializer_class = ScheduleSerializer
+    serializer_class = serializers.ScheduleSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
@@ -43,7 +41,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
 
 
 class EventViewSet(viewsets.ModelViewSet):
-    serializer_class = EventSerializer
+    serializer_class = serializers.EventSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
@@ -57,7 +55,7 @@ class EventViewSet(viewsets.ModelViewSet):
             raise Http404("Não existe agendamento.")
 
         events = queryset.filter(schedule=schedule)        
-        serializer = EventSerializer(events, many=True)
+        serializer = serializers.EventSerializer(events, many=True)
 
         return Response(serializer.data)
 
@@ -95,7 +93,7 @@ class EventViewSet(viewsets.ModelViewSet):
 
 
 class ProviderMonthViewSet(generics.RetrieveAPIView):    
-    serializer_class = ProviderMonthSerializer
+    serializer_class = serializers.ProviderMonthSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def retrieve(self, request, pk):
@@ -126,11 +124,12 @@ class ProviderMonthViewSet(generics.RetrieveAPIView):
                     'vacancies_night': 0
                 })                
         
-        serializer = ProviderMonthSerializer(provider_months, many=True)
+        serializer = serializers.ProviderMonthSerializer(provider_months, many=True)
         return Response(serializer.data)
 
+
 class AppointmentMonthViewSet(generics.ListAPIView):
-    serializer_class = AppointmentMonthSerializer
+    serializer_class = serializers.AppointmentMonthSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
@@ -153,12 +152,12 @@ class AppointmentMonthViewSet(generics.ListAPIView):
                 'status': appointment.status(self.request.user)
             })
         
-        serializer = AppointmentMonthSerializer(appointments_month, many=True)
+        serializer = serializers.AppointmentMonthSerializer(appointments_month, many=True)
         return Response(serializer.data)
 
 
 class AppointmentUpdateStatusViewSet(generics.UpdateAPIView):
-    serializer_class = AppointmentMonthSerializer
+    serializer_class = serializers.AppointmentMonthSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def update(self, request, pk=None):
@@ -166,24 +165,24 @@ class AppointmentUpdateStatusViewSet(generics.UpdateAPIView):
             appointment = Appointment.objects.get(pk=pk)
         except Appointment.DoesNotExist:
             return HttpResponse(status=404)
-        
+
         if appointment.user in (None, self.request.user):
             if appointment.user == self.request.user \
                 and appointment.canceled_at == None:
                 appointment.canceled_at = timezone.now()
             else:
                 appointment.user = self.request.user
-                appointment.canceled_at = None        
+                appointment.canceled_at = None
             appointment.save()
 
-            serializer = AppointmentMonthSerializer(appointment)
+            serializer = serializers.AppointmentMonthSerializer(appointment)
             return JsonResponse(serializer.data)
         
         return JsonResponse(status=400)
 
 
 class MyAppointmentViewSet(generics.ListAPIView):
-    serializer_class = MyAppointmentSerializer
+    serializer_class = serializers.MyAppointmentSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
@@ -199,5 +198,44 @@ class MyAppointmentViewSet(generics.ListAPIView):
                 'provider_name': appointment.provider.get_full_name()
             })
 
-        serializer = MyAppointmentSerializer(appointments_, many=True)
+        serializer = serializers.MyAppointmentSerializer(appointments_, many=True)
         return JsonResponse(serializer.data, safe=False)
+
+
+class AppointmentViewSet(viewsets.ModelViewSet):
+    queryset = Appointment.objects.all()
+    serializer_class = serializers.AppointmentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request):
+        serializer = serializers.AppointmentSerializer(data=self.request.data)
+        
+        if serializer.is_valid(raise_exception=True):
+            appointment = Appointment(**serializer.validated_data)
+            if appointment.appointment_exist():
+                return JsonResponse({'msg': 'Período já possui agendamento'},
+                    status=400)
+            appointment.save()
+            return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
+        
+        return JsonResponse(status=400)
+
+    def update(self, request, pk=None):
+        try:
+            appointment = Appointment.objects.get(pk=pk)
+        except Appointment.DoesNotExist:
+            return HttpResponse(status=404)
+
+        serializer = serializers.AppointmentSerializer(appointment, data=self.request.data)
+
+        if serializer.is_valid():
+            appointment.loose_client = serializer.validated_data['loose_client']
+            appointment.user = self.request.user
+            appointment.canceled_at = None
+            if not appointment.schedule:
+                appointment.date_time = serializer.validated_data['date_time']
+                appointment.time_range = serializer.validated_data['time_range']
+            appointment.save()
+            return JsonResponse(serializer.data)
+
+        return JsonResponse(status=400)

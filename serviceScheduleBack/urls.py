@@ -17,7 +17,8 @@ from serviceScheduleBack.access.views import (
 
 from serviceScheduleBack.schedule.views import (ScheduleViewSet, EventViewSet,
         ProviderMonthViewSet, AppointmentMonthViewSet,
-        AppointmentUpdateStatusViewSet, MyAppointmentViewSet)
+        AppointmentUpdateStatusViewSet, MyAppointmentViewSet,
+        AppointmentViewSet)
 
 
 router = routers.DefaultRouter()
@@ -25,6 +26,7 @@ router.register(r'users', UserViewSet)
 router.register(r'perfil', PerfilViewSet)
 router.register(r'schedules', ScheduleViewSet)
 router.register(r'events', EventViewSet, 'events')
+router.register(r'appointment', AppointmentViewSet)
 
 urlpatterns = [
     path('api/', include(router.urls)),

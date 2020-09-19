@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Schedule, Event
+from .models import Schedule, Event, Appointment
 
 
 class ScheduleSerializer(serializers.ModelSerializer):
@@ -15,6 +15,16 @@ class EventSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Event
+        fields = '__all__'
+
+
+class AppointmentSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    hours_start = serializers.TimeField(source='get_hours_start', read_only=True)
+    hours_end = serializers.TimeField(source='get_hours_end', read_only=True)
+    
+    class Meta:
+        model = Appointment
         fields = '__all__'
 
 
