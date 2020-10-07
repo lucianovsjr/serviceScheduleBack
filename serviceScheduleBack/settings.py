@@ -14,7 +14,12 @@ SECRET_KEY = 'lp$63+))@4n(_!n!w#1$65h_29%22=!h^fnfxjhb$z7-k5ecs!'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['10.0.2.2', '127.0.0.1', '192.168.1.64']
+ALLOWED_HOSTS = [
+    '10.0.2.2',
+    '127.0.0.1',
+    '192.168.1.64',
+    'lucianovsjr-calendar.herokuapp.com'
+]
 
 
 # Application definition
