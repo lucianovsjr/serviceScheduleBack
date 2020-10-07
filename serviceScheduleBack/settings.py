@@ -72,7 +72,7 @@ WSGI_APPLICATION = 'serviceScheduleBack.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
-if config('DATABASE') == 'sqlite3':
+if config('DATABASE', default='') == 'sqlite3':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
