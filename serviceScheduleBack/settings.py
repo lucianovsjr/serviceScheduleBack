@@ -142,11 +142,11 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=365),
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
 }
 
-APPEND_SLASH=False
+APPEND_SLASH = False
 
 django_heroku.settings(locals())
