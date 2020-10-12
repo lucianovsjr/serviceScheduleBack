@@ -115,22 +115,16 @@ class ProviderMonthViewSet(generics.RetrieveAPIView):
             provider=pk,
             event=None
         ).order_by('date_time')
+
         for appointment in appointments:
-            exists = False
             date_time = str(appointment.date_time.year) + str(
                 appointment.date_time.month)
+
+            exists = False
             for provider_month in provider_months:
                 if date_time == provider_month['date']:
                     exists = True
-                    provider_month['vacancies_total'] += 1
-                    if appointment.date_time.hour >= 6:
-                        provider_month['vacancies_morning'] += 1
-                    elif appointment.date_time.hour >= 12:
-                        provider_month['vacancies_afternoon'] += 1
-                    elif appointment.date_time.hour >= 18 or \
-                        appointment.date_time.hour < 6:
-                        provider_month['vacancies_night'] += 1
-                    break
+
             if not exists:
                 provider_months.append({
                     'date': date_time,
@@ -139,6 +133,22 @@ class ProviderMonthViewSet(generics.RetrieveAPIView):
                     'vacancies_afternoon': 0,
                     'vacancies_night': 0
                 })
+
+            for provider_month in provider_months:
+                if date_time == provider_month['date']:
+                    provider_month['vacancies_total'] += 1
+
+                    if appointment.date_time.hour >= 18:
+                        provider_month['vacancies_night'] += 1
+                    elif appointment.date_time.hour >= 12:
+                        provider_month['vacancies_afternoon'] += 1
+                    elif appointment.date_time.hour >= 6:
+                        provider_month['vacancies_morning'] += 1
+                    else:
+                        # appointment.date_time.hour < 6
+                        provider_month['vacancies_night'] += 1
+
+                    break
 
         serializer = serializers.ProviderMonthSerializer(
             provider_months,
