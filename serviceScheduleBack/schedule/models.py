@@ -16,18 +16,21 @@ class Schedule(models.Model):
                                         self.time_range)
 
     def create_appointments(self):
-        date_time = datetime(self.date_start.year, self.date_start.month,
-                            self.date_start.day, self.hours_start.hour,
-                            self.hours_start.minute)
-        date_time_end = datetime(self.date_end.year, self.date_end.month,
-                                self.date_end.day, self.hours_end.hour,
-                                self.hours_end.minute)
+        date_time = datetime(
+            self.date_start.year, self.date_start.month,
+            self.date_start.day, self.hours_start.hour,
+            self.hours_start.minute
+        )
+        date_time_end = datetime(
+            self.date_end.year, self.date_end.month,
+            self.date_end.day, self.hours_end.hour,
+            self.hours_end.minute
+        )
+
         minutes = timedelta(minutes=self.time_range)
         day = timedelta(days=1)
         hour_start = self.hours_start.hour
         minute_start = self.hours_start.minute
-        hour_end = self.hours_end.hour
-        minute_end = self.hours_end.minute
 
         while (date_time <= date_time_end):
             appointment = Appointment(
@@ -43,8 +46,10 @@ class Schedule(models.Model):
                 date_time += minutes
             else:
                 date_time += day
-                date_time = date_time.replace(hour=hour_start,
-                                minute=minute_start)
+                date_time = date_time.replace(
+                    hour=hour_start,
+                    minute=minute_start
+                )
 
     def appointments_exists(self):
         appointments = Appointment.objects.filter(
