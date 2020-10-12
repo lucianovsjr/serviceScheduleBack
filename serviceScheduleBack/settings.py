@@ -7,8 +7,8 @@ import django_heroku
 from decouple import config, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
-HEROKU_BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 # Quick-start development settings - unsuitable for production
@@ -41,8 +41,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -79,7 +79,7 @@ if DEBUG:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'NAME': BASE_DIR + '/db.sqlite3', #  BASE_DIR / 'db.sqlite3',
         }
     }
 else:
@@ -130,18 +130,11 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
-if not DEBUG:
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-    STATIC_URL = '/static/'
-    STATICFILES_DIRS = (
-        os.path.join(BASE_DIR, 'static'),
-    )
-else:
-    STATIC_ROOT = os.path.join(HEROKU_BASE_DIR, 'staticfiles')
-    STATIC_URL = '/static/'
-    STATICFILES_DIRS = (
-        os.path.join(HEROKU_BASE_DIR, 'static'),
-    )
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_URL = '/static/'
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'static'),
+)
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 

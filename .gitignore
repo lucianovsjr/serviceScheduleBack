@@ -1,4 +1,4 @@
 *.pyc
-staticfiles
+# staticfiles
 .env
 db.sqlite3
