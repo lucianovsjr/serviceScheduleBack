@@ -10,19 +10,19 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['url', 'username', 'email']
 
 
-class RegisterSerializer(serializers.ModelSerializer):    
+class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['username', 'first_name', 'email', 'password']
 
-    def create(self, validated_data):        
-        password = validated_data.pop('password')        
+    def create(self, validated_data):
+        password = validated_data.pop('password')
 
         user = User(**validated_data)
         # user.username = validated_data['email']
         user.set_password(password)
         user.save()
-        
+
         perfil = Perfil(user=user)
         perfil.save()
 
@@ -33,7 +33,7 @@ class PerfilSerializer(serializers.ModelSerializer):
     id = serializers.CharField(source='user.id')
     name = serializers.CharField(source='user.get_full_name')
     email = serializers.CharField(source='user.email')
-    
+
     class Meta:
         model = Perfil
         fields = ['id', 'name', 'email', 'provider', 'fantasy_name', 'profession']
@@ -42,4 +42,3 @@ class PerfilSerializer(serializers.ModelSerializer):
 class PerfilUpdateSerializer(serializers.Serializer):
     name = serializers.CharField(source='user.get_full_name')
 
-    

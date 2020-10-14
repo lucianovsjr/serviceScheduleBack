@@ -6,13 +6,19 @@ from .models import Schedule, Event, Appointment
 class ScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Schedule
-        fields = ['id', 'date_start', 'date_end', 'hours_start',
-                    'hours_end', 'time_range']
+        fields = [
+            'id',
+            'date_start',
+            'date_end',
+            'hours_start',
+            'hours_end',
+            'time_range'
+        ]
 
 
 class EventSerializer(serializers.ModelSerializer):
     week_days = serializers.ListField(read_only=True)
-    
+
     class Meta:
         model = Event
         fields = '__all__'
@@ -22,14 +28,14 @@ class AppointmentSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source='user.get_full_name', read_only=True)
     hours_start = serializers.TimeField(source='get_hours_start', read_only=True)
     hours_end = serializers.TimeField(source='get_hours_end', read_only=True)
-    
+
     class Meta:
         model = Appointment
         fields = '__all__'
 
 
 class ProviderMonthSerializer(serializers.Serializer):
-    date = serializers.CharField(max_length=6)    
+    date = serializers.CharField(max_length=6)
     vacancies_total = serializers.IntegerField(default=0)
     vacancies_morning = serializers.IntegerField(default=0)
     vacancies_afternoon = serializers.IntegerField(default=0)

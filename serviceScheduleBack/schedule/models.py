@@ -1,5 +1,8 @@
+import pytz
 from datetime import datetime, timedelta
+
 from django.db import models
+from django.utils import timezone
 
 
 class Schedule(models.Model):
@@ -16,15 +19,23 @@ class Schedule(models.Model):
                                         self.time_range)
 
     def create_appointments(self):
+        # tzinfo = timezone.localtime().tzinfo
+        tzinfo = pytz.utc
         date_time = datetime(
-            self.date_start.year, self.date_start.month,
-            self.date_start.day, self.hours_start.hour,
-            self.hours_start.minute
+            self.date_start.year,
+            self.date_start.month,
+            self.date_start.day,
+            self.hours_start.hour,
+            self.hours_start.minute,
+            tzinfo=tzinfo
         )
         date_time_end = datetime(
-            self.date_end.year, self.date_end.month,
-            self.date_end.day, self.hours_end.hour,
-            self.hours_end.minute
+            self.date_end.year,
+            self.date_end.month,
+            self.date_end.day,
+            self.hours_end.hour,
+            self.hours_end.minute,
+            tzinfo=tzinfo
         )
 
         minutes = timedelta(minutes=self.time_range)
@@ -56,7 +67,7 @@ class Schedule(models.Model):
             date_time__date__range=(self.date_start, self.date_end),
             date_time__time__range=(self.hours_start, self.hours_end)
         )
-    
+
         return appointments.count() > 0
 
 
@@ -72,16 +83,16 @@ class Event(models.Model):
     def week_days(self):
         ret_week = []
         for day in enumerate(self.week):
-            ret_week.append(day[1] == '1')            
-        
+            ret_week.append(day[1] == '1')
+
         return ret_week
-    
+
     def _week_days(self):
         ret_week = []
         for day in enumerate(self.week):
             if day[1] == '1':
                 ret_week.append(day[0] + 1)
-        
+
         return ret_week
 
     def clear_appointment(self):
@@ -89,8 +100,8 @@ class Event(models.Model):
             appointment.event = None
             appointment.save()
 
-    def update_appointments(self):        
-        appointments = self.schedule.appointment_schedule.all()        
+    def update_appointments(self):
+        appointments = self.schedule.appointment_schedule.all()
         if self.date:
             appointments = appointments.filter(date_time__date=self.date)
         else:
@@ -168,6 +179,6 @@ class Appointment(models.Model):
                 self.date_time.time(),
                 (self.date_time + timedelta(minutes=self.time_range)).time()
             )
-        )        
+        )
 
         return appointments.count() > 0

@@ -239,6 +239,7 @@ class MyAppointmentViewSet(generics.ListAPIView):
             appointments_,
             many=True
         )
+
         return JsonResponse(serializer.data, safe=False)
 
 

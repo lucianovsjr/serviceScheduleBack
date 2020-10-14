@@ -40,8 +40,8 @@ class PerfilUpdate(generics.UpdateAPIView):
     def update(self, request, *args, **kwargs):
         user = self.request.user
         user.first_name = request.data['name']
-        user.save()        
-        
+        user.save()
+
         perfil = self.request.user.user_perfil
         perfil.fantasy_name = request.data['fantasy_name']
         perfil.profession = request.data['profession']
