@@ -19,8 +19,8 @@ class Schedule(models.Model):
                                         self.time_range)
 
     def create_appointments(self):
-        # tzinfo = timezone.localtime().tzinfo
-        tzinfo = pytz.utc
+        tzinfo = timezone.localtime().tzinfo
+        # tzinfo = pytz.utc
         date_time = datetime(
             self.date_start.year,
             self.date_start.month,

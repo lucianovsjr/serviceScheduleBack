@@ -137,12 +137,13 @@ class ProviderMonthViewSet(generics.RetrieveAPIView):
             for provider_month in provider_months:
                 if date_time == provider_month['date']:
                     provider_month['vacancies_total'] += 1
+                    date_tz = timezone.localtime(appointment.date_time)
 
-                    if appointment.date_time.hour >= 18:
+                    if date_tz.hour >= 18:
                         provider_month['vacancies_night'] += 1
-                    elif appointment.date_time.hour >= 12:
+                    elif date_tz.hour >= 12:
                         provider_month['vacancies_afternoon'] += 1
-                    elif appointment.date_time.hour >= 6:
+                    elif date_tz.hour >= 6:
                         provider_month['vacancies_morning'] += 1
                     else:
                         # appointment.date_time.hour < 6
@@ -174,11 +175,12 @@ class AppointmentMonthViewSet(generics.ListAPIView):
 
         appointments_month = []
         for appointment in appointments:
+            date_tz = timezone.localtime(appointment.date_time)
             appointments_month.append({
                 'id': appointment.id,
-                'date': appointment.date_time.date(),
-                'time': appointment.date_time.time(),
-                'canceled_at': appointment.canceled_at,
+                'date': date_tz.date(),
+                'time': date_tz.time(),
+                'canceled_at': timezone.localtime(appointment.canceled_at),
                 'user_id': appointment.user.id if appointment.user else None,
                 'loose_client': appointment.loose_client,
                 'status': appointment.status(self.request.user)
@@ -229,7 +231,7 @@ class MyAppointmentViewSet(generics.ListAPIView):
         for appointment in appointments:
             appointments_.append({
                 'id': appointment.id,
-                'date_time': appointment.date_time,
+                'date_time': timezone.localtime(appointment.date_time),
                 'canceled_at': appointment.canceled_at,
                 'provider_id': appointment.provider.id,
                 'provider_name': appointment.provider.get_full_name()
