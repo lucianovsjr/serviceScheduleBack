@@ -33,12 +33,20 @@ class PerfilSerializer(serializers.ModelSerializer):
     id = serializers.CharField(source='user.id')
     name = serializers.CharField(source='user.get_full_name')
     email = serializers.CharField(source='user.email')
+    image_name = serializers.CharField(source='image.name')
 
     class Meta:
         model = Perfil
-        fields = ['id', 'name', 'email', 'provider', 'fantasy_name', 'profession']
+        fields = [
+            'id',
+            'name',
+            'email',
+            'provider',
+            'fantasy_name',
+            'profession',
+            'image_name'
+        ]
 
 
 class PerfilUpdateSerializer(serializers.Serializer):
     name = serializers.CharField(source='user.get_full_name')
-
