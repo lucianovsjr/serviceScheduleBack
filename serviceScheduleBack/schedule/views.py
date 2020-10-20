@@ -14,7 +14,8 @@ class ScheduleViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Schedule.objects.filter(provider=self.request.user)
+        return Schedule.objects.filter(
+            provider=self.request.user).order_by('date_start', 'hours_start')
 
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -171,7 +172,7 @@ class AppointmentMonthViewSet(generics.ListAPIView):
             date_time__year=year,
             date_time__month=month,
             provider=provider_id, event=None
-        )
+        ).order_by('date_time')
 
         appointments_month = []
         for appointment in appointments:
@@ -215,7 +216,7 @@ class AppointmentUpdateStatusViewSet(generics.UpdateAPIView):
             serializer = serializers.AppointmentMonthSerializer(appointment)
             return JsonResponse(serializer.data)
 
-        return JsonResponse(status=400)
+        return HttpResponse(status=400)
 
 
 class MyAppointmentViewSet(generics.ListAPIView):
@@ -226,7 +227,8 @@ class MyAppointmentViewSet(generics.ListAPIView):
         appointments = Appointment.objects.filter(
             user=self.request.user,
             canceled_at=None
-        )
+        ).order_by('date_time')
+
         appointments_ = []
         for appointment in appointments:
             appointments_.append({
