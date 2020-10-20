@@ -58,3 +58,4 @@ class MyAppointmentSerializer(serializers.Serializer):
     canceled_at = serializers.DateTimeField(read_only=True)
     provider_id = serializers.IntegerField(default=0)
     provider_name = serializers.CharField(max_length=30)
+    image_name = serializers.CharField(max_length=50)

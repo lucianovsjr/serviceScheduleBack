@@ -234,7 +234,9 @@ class MyAppointmentViewSet(generics.ListAPIView):
                 'date_time': timezone.localtime(appointment.date_time),
                 'canceled_at': appointment.canceled_at,
                 'provider_id': appointment.provider.id,
-                'provider_name': appointment.provider.get_full_name()
+                'provider_name': appointment.provider.get_full_name(),
+                'image_name': (appointment.provider.user_perfil.image.name
+                    if appointment.provider.user_perfil.image else '')
             })
 
         serializer = serializers.MyAppointmentSerializer(
