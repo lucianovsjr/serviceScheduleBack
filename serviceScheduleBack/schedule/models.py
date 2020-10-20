@@ -167,10 +167,11 @@ class Appointment(models.Model):
         return 'available'
 
     def get_hours_start(self):
-        return self.date_time.time()
+        return timezone.localtime(self.date_time).time()
 
     def get_hours_end(self):
-        return (self.date_time + timedelta(minutes=self.time_range)).time()
+        return (timezone.localtime(self.date_time) + timedelta(
+            minutes=self.time_range)).time()
 
     def appointment_exist(self):
         appointments = Appointment.objects.filter(
