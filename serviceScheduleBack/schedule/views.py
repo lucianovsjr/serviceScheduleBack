@@ -204,19 +204,19 @@ class AppointmentUpdateStatusViewSet(generics.UpdateAPIView):
         except Appointment.DoesNotExist:
             return HttpResponse(status=404)
 
-        if appointment.user in (None, self.request.user):
-            if appointment.user == self.request.user \
-                    and appointment.canceled_at == None:
+        if (appointment.user and not appointment.canceled_at):
+            # Cancelar
+            if (appointment.user == self.request.user
+                    or appointment.provider == self.request.user):
                 appointment.canceled_at = timezone.now()
-            else:
-                appointment.user = self.request.user
-                appointment.canceled_at = None
-            appointment.save()
+        else:
+            appointment.user = self.request.user
+            appointment.loose_client = self.request.user.get_full_name()
+            appointment.canceled_at = None
+        appointment.save()
 
-            serializer = serializers.AppointmentMonthSerializer(appointment)
-            return JsonResponse(serializer.data)
-
-        return HttpResponse(status=400)
+        serializer = serializers.AppointmentMonthSerializer(appointment)
+        return JsonResponse(serializer.data)
 
 
 class MyAppointmentViewSet(generics.ListAPIView):
@@ -264,6 +264,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                     {'msg': 'Período já possui agendamento'},
                     status=400
                 )
+            appointment.user = self.request.user
             appointment.save()
             return JsonResponse(
                 serializer.data,

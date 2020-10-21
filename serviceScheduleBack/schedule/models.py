@@ -156,12 +156,17 @@ class Appointment(models.Model):
         return not self.user
 
     def status(self, user):
+        '''
+        Agendar: available, canceled
+        Cancelar: unavailable, marked (Somente se for o usuário)
+        '''
+        if self.canceled_at:
+            return 'canceled'
+
         if self.user == user:
-            if self.canceled_at:
-                return 'canceled'
-            else:
-                return 'marked'
-        elif not self.user and self.loose_client != '':
+            return 'marked'
+
+        if self.user and self.loose_client != '':
             return 'unavailable'
 
         return 'available'
