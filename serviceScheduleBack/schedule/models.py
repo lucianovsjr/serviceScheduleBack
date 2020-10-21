@@ -43,7 +43,7 @@ class Schedule(models.Model):
         hour_start = self.hours_start.hour
         minute_start = self.hours_start.minute
 
-        while (date_time <= date_time_end):
+        while (date_time < date_time_end):
             appointment = Appointment(
                 schedule=self,
                 provider=self.provider,
@@ -52,10 +52,9 @@ class Schedule(models.Model):
             )
             appointment.save()
 
-            if (date_time.time() >= self.hours_start
-                and date_time.time() < self.hours_end):
-                date_time += minutes
-            else:
+            date_time += minutes
+            if not (date_time.time() >= self.hours_start
+                    and date_time.time() < self.hours_end):
                 date_time += day
                 date_time = date_time.replace(
                     hour=hour_start,
