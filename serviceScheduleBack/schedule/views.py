@@ -114,7 +114,8 @@ class ProviderMonthViewSet(generics.RetrieveAPIView):
         provider_months = []
         appointments = Appointment.objects.filter(
             provider=pk,
-            event=None
+            event=None,
+            date_time__date__gte=timezone.localtime(timezone.now()).date()
         ).order_by('date_time')
 
         for appointment in appointments:
@@ -171,6 +172,7 @@ class AppointmentMonthViewSet(generics.ListAPIView):
         appointments = Appointment.objects.filter(
             date_time__year=year,
             date_time__month=month,
+            date_time__date__gte=timezone.localtime(timezone.now()).date(),
             provider=provider_id, event=None
         ).order_by('date_time')
 
@@ -226,7 +228,8 @@ class MyAppointmentViewSet(generics.ListAPIView):
     def list(self, request):
         appointments = Appointment.objects.filter(
             user=self.request.user,
-            canceled_at=None
+            canceled_at=None,
+            date_time__date__gte=timezone.localtime(timezone.now()).date()
         ).order_by('date_time')
 
         appointments_ = []
