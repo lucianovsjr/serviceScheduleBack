@@ -210,6 +210,7 @@ class AppointmentUpdateStatusViewSet(generics.UpdateAPIView):
             # Cancelar
             if (appointment.user == self.request.user
                     or appointment.provider == self.request.user):
+                appointment.loose_client = ''
                 appointment.canceled_at = timezone.now()
         else:
             appointment.user = self.request.user
