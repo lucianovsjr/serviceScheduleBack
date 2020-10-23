@@ -33,7 +33,6 @@ class PerfilSerializer(serializers.ModelSerializer):
     id = serializers.CharField(source='user.id')
     name = serializers.CharField(source='user.get_full_name')
     email = serializers.CharField(source='user.email')
-    image_name = serializers.CharField(source='image.name')
 
     class Meta:
         model = Perfil

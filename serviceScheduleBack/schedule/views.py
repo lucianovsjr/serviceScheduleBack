@@ -241,7 +241,7 @@ class MyAppointmentViewSet(generics.ListAPIView):
                 'canceled_at': appointment.canceled_at,
                 'provider_id': appointment.provider.id,
                 'provider_name': appointment.provider.get_full_name(),
-                'image_name': (appointment.provider.user_perfil.image.name
+                'image_name': (appointment.provider.user_perfil.image_name()
                     if appointment.provider.user_perfil.image else '')
             })
 

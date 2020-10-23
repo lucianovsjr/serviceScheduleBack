@@ -1,6 +1,8 @@
 from django.db import models
 
 
+URL_AMAZON_S3 = 'https://week-calendar-app.s3.us-east-2.amazonaws.com'
+
 def upload_name(instance, filename):
     # path = 'profile'
     # return '{0}/user_{1}_{2}'.format(path, instance.user.id, filename)
@@ -16,3 +18,6 @@ class Perfil(models.Model):
     image = models.ImageField(verbose_name='Imagem',
             upload_to=upload_name, default='profile-default', null=True,
             blank=True)
+
+    def image_name(self):
+        return f'{URL_AMAZON_S3}/{self.image.name}'
