@@ -4,8 +4,6 @@ from django.db import models
 URL_AMAZON_S3 = 'https://week-calendar-app.s3.us-east-2.amazonaws.com'
 
 def upload_name(instance, filename):
-    # path = 'profile'
-    # return '{0}/user_{1}_{2}'.format(path, instance.user.id, filename)
     return f'{instance.user.id}-{filename}'
 
 

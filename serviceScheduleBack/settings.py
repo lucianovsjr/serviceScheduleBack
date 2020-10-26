@@ -1,13 +1,11 @@
 import os
-from pathlib import Path
 from datetime import timedelta
 
 import django_heroku
 
 from decouple import config, Csv
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-# BASE_DIR = Path(__file__).resolve().parent.parent
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -35,6 +33,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'rest_framework',
+    'storages',
 
     'serviceScheduleBack.access.apps.AccessConfig',
     'serviceScheduleBack.schedule.apps.ScheduleConfig',
@@ -129,22 +128,26 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
-# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-STATIC_URL = '/static/'
+# STATIC_URL = '/static/'
 
-MEDIA_URL = '/media/'
+# MEDIA_URL = '/media/'
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # AWS S3
-AWS_ACCESS_KEY_ID = 'AKIATEWDHXH46L6WCEPO'
-AWS_SECRET_ACCESS_KEY = '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'
+AWS_ACCESS_KEY_ID = config('AWS_ID')
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET')
 AWS_STORAGE_BUCKET_NAME = 'week-calendar-app'
 
-AWS_S3_FILE_OVERWRITE = False
 AWS_DEFAULT_ACL = None
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
+STATIC_URL = 'https://%s/%s/' % (AWS_S3_CUSTOM_DOMAIN, 'static')
+
+DEFAULT_FILE_STORAGE = 'serviceScheduleBack.storage_backends.MediaStorage'
+STATICFILES_STORAGE = 'serviceScheduleBack.storage_backends.StaticStorage'
 
 
 REST_FRAMEWORK = {

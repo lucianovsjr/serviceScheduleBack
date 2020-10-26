@@ -1,5 +1,5 @@
 *.pyc
-# staticfiles
+staticfiles/
 .env
 db.sqlite3
 media/
