@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from datetime import timedelta
 
 import django_heroku
@@ -17,7 +18,6 @@ SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', cast=bool, default=False)
-DEBUG_PROPAGATE_EXCEPTIONS = True
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())
 
@@ -32,8 +32,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'rest_framework',
     'storages',
+    'rest_framework',
 
     'serviceScheduleBack.access.apps.AccessConfig',
     'serviceScheduleBack.schedule.apps.ScheduleConfig',
@@ -41,6 +41,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -130,24 +131,24 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+STATIC_URL = '/static/'
+
 # STATIC_URL = '/static/'
 
 # MEDIA_URL = '/media/'
 
-# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# AWS S3
-AWS_ACCESS_KEY_ID = config('AWS_ID')
-AWS_SECRET_ACCESS_KEY = config('AWS_SECRET')
-AWS_STORAGE_BUCKET_NAME = 'week-calendar-app'
+if DEBUG:
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+else:
+    # AWS S3
+    AWS_ACCESS_KEY_ID = config('AWS_ID')
+    AWS_SECRET_ACCESS_KEY = config('AWS_SECRET')
+    AWS_STORAGE_BUCKET_NAME = config('AWS_BUCKET')
 
-AWS_DEFAULT_ACL = None
+    AWS_DEFAULT_ACL = None
 
-AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
-STATIC_URL = 'https://%s/%s/' % (AWS_S3_CUSTOM_DOMAIN, 'static')
-
-DEFAULT_FILE_STORAGE = 'serviceScheduleBack.storage_backends.MediaStorage'
-STATICFILES_STORAGE = 'serviceScheduleBack.storage_backends.StaticStorage'
+    DEFAULT_FILE_STORAGE = 'serviceScheduleBack.storage_backends.MediaStorage'
 
 
 REST_FRAMEWORK = {
