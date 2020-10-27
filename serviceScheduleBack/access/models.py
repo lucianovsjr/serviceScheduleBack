@@ -18,4 +18,4 @@ class Perfil(models.Model):
             blank=True)
 
     def image_name(self):
-        return f'{URL_AMAZON_S3}/{self.image.name}'
+        return f'{URL_AMAZON_S3}/media/{self.image.name}'
