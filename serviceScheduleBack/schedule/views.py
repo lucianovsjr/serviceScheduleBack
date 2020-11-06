@@ -186,7 +186,7 @@ class AppointmentMonthViewSet(generics.ListAPIView):
                 'canceled_at': timezone.localtime(appointment.canceled_at),
                 'user_id': appointment.user.id if appointment.user else None,
                 'loose_client': appointment.loose_client,
-                'status': appointment.status(self.request.user)
+                'status': appointment.get_status(self.request.user)
             })
 
         serializer = serializers.AppointmentMonthSerializer(
@@ -212,10 +212,12 @@ class AppointmentUpdateStatusViewSet(generics.UpdateAPIView):
                     or appointment.provider == self.request.user):
                 appointment.loose_client = ''
                 appointment.canceled_at = timezone.now()
+                appointment.status = Appointment.FREE
         else:
             appointment.user = self.request.user
             appointment.loose_client = self.request.user.get_full_name()
             appointment.canceled_at = None
+            appointment.status = Appointment.SCHEDULED
         appointment.save()
 
         serializer = serializers.AppointmentMonthSerializer(appointment)
@@ -242,7 +244,8 @@ class MyAppointmentViewSet(generics.ListAPIView):
                 'provider_id': appointment.provider.id,
                 'provider_name': appointment.provider.get_full_name(),
                 'image_name': (appointment.provider.user_perfil.image_name()
-                    if appointment.provider.user_perfil.image else '')
+                               if appointment.provider.user_perfil.image
+                               else '')
             })
 
         serializer = serializers.MyAppointmentSerializer(
@@ -263,12 +266,14 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 
         if serializer.is_valid(raise_exception=True):
             appointment = Appointment(**serializer.validated_data)
+            appointment.company = appointment.provider.user_perfil.company
+            appointment.user = self.request.user
+            appointment.status = Appointment.SCHEDULED
             if appointment.appointment_exist():
                 return JsonResponse(
                     {'msg': 'Período já possui agendamento'},
                     status=400
                 )
-            appointment.user = self.request.user
             appointment.save()
             return JsonResponse(
                 serializer.data,
@@ -293,6 +298,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                 'loose_client']
             appointment.user = self.request.user
             appointment.canceled_at = None
+            appointment.status = Appointment.SCHEDULED
             if not appointment.schedule:
                 appointment.date_time = serializer.validated_data['date_time']
                 appointment.time_range = serializer.validated_data[
