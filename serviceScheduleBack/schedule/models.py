@@ -170,18 +170,20 @@ class Appointment(models.Model):
         return not self.user
 
     def get_status(self, user):
-        # Agendar: available, canceled
-        # Cancelar: unavailable, marked (Somente se for o usuário)
-        if self.canceled_at:
-            return 'canceled'
+        # Status para o mobile
+        # cancel, busy, schedule
+        IS_OWNER = self.provider == user or self.user == user
 
-        if self.user == user:
-            return 'marked'
+        if self.status in (self.SCHEDULED, self.BUSY) and not IS_OWNER:
+            return 'busy'
 
-        if self.user and self.loose_client != '':
-            return 'unavailable'
+        if IS_OWNER and self.status == self.SCHEDULED:
+            return 'cancel'
 
-        return 'available'
+        if self.status == self.FREE:
+            return 'schedule'
+
+        return 'busy'
 
     def get_hours_start(self):
         return timezone.localtime(self.date_time).time()
@@ -190,32 +192,20 @@ class Appointment(models.Model):
         return (timezone.localtime(self.date_time) + timedelta(
             minutes=self.time_range)).time()
 
-    def base_exist(self):
-        appointments = Appointment.objects.filter(
-            company=self.company,
-            date_time__date=self.date_time.date(),
-            date_time__time__range=(
-                self.date_time.time(),
-                (self.date_time + timedelta(minutes=self.time_range)).time()
-            )
-        ).exclude(loose_client='')
-
-        return appointments.count()
-
     def appointment_exist(self):
         # Usado na hora de criar um appointment avulso com status já agendado
+        # Marcando appointment como agendado
+        # Verificar se existe outro appointment
         appointments = Appointment.objects.filter(
             company=self.company,
             date_time__date=self.date_time.date(),
             date_time__time__range=(
-                self.date_time.time(),
-                (self.date_time + timedelta(minutes=self.time_range)).time()
+                timezone.localtime(self.date_time).time(),
+                timezone.localtime(self.date_time +
+                                   timedelta(minutes=self.time_range)
+                                   ).time()
             ),
             status=self.SCHEDULED
         )
 
         return appointments.count() > 0
-
-    def exists_appointments(self):
-        # Verificar se existe outro appointment
-        return self.base_exist() > 1

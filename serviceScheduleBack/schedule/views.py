@@ -303,6 +303,11 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                 appointment.date_time = serializer.validated_data['date_time']
                 appointment.time_range = serializer.validated_data[
                     'time_range']
+            if appointment.appointment_exist():
+                return JsonResponse(
+                    {'msg': 'Horário já possui agendamento'},
+                    status=400
+                )
             appointment.save()
             return JsonResponse(serializer.data)
 
