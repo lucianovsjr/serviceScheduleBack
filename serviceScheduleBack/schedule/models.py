@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 
 from django.db import models
 from django.utils import timezone
@@ -15,7 +15,7 @@ class Schedule(models.Model):
     time_range = models.IntegerField('Tempo de atendimento', default=0)
 
     def __str__(self):
-        return '{}  {} {} - {} {}'.format(self.provider,self.date_start,
+        return '{}  {} {} - {} {}'.format(self.provider, self.date_start,
                                           self.hours_start, self.date_end,
                                           self.hours_end)
 
@@ -99,6 +99,7 @@ class Event(models.Model):
     def clear_appointment(self):
         for appointment in self.appointment_event.all():
             appointment.event = None
+            appointment.status = Appointment.FREE
             appointment.save()
 
     def update_appointments(self):
@@ -110,10 +111,13 @@ class Event(models.Model):
                     date_time__week_day__in=self._week_days())
         if not self.all_day:
             appointments = appointments.filter(
-                    date_time__time__range=(self.hours_start, self.hours_end))
+                    date_time__time__range=(
+                        self.hours_start,
+                        time(self.hours_end.hour, self.hours_end.minute-1)))
 
         for appointment in appointments:
             appointment.event = self
+            appointment.status = Appointment.BUSY
             appointment.save()
 
     def appointments_exists(self):
@@ -126,7 +130,9 @@ class Event(models.Model):
                     date_time__week_day__in=self._week_days())
         if not self.all_day:
             appointments = appointments.filter(
-                    date_time__time__range=(self.hours_start, self.hours_end))
+                    date_time__time__range=(
+                        self.hours_start,
+                        time(self.hours_end.hour, self.hours_end.minute-1)))
 
         return appointments.count() > 0
 
