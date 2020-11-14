@@ -110,10 +110,11 @@ class Event(models.Model):
             appointments = appointments.filter(
                     date_time__week_day__in=self._week_days())
         if not self.all_day:
+            hours_end = (datetime.combine(datetime.now().date(),
+                                          self.hours_end)
+                         - timedelta(minutes=1)).time()
             appointments = appointments.filter(
-                    date_time__time__range=(
-                        self.hours_start,
-                        time(self.hours_end.hour, self.hours_end.minute-1)))
+                    date_time__time__range=(self.hours_start, hours_end))
 
         for appointment in appointments:
             appointment.event = self
@@ -121,18 +122,20 @@ class Event(models.Model):
             appointment.save()
 
     def appointments_exists(self):
-        # Adicionar: filter(schedule__provider=self.schedule.provider)
-        appointments = Appointment.objects.exclude(event=None)
+        # Verifica se já existe evento para o período
+        appointments = Appointment.objects.filter(
+            schedule__provider=self.schedule.provider).exclude(event=None)
         if self.date:
             appointments = appointments.filter(date_time__date=self.date)
         else:
             appointments = appointments.filter(
                     date_time__week_day__in=self._week_days())
         if not self.all_day:
+            hours_end = (datetime.combine(datetime.now().date(),
+                                          self.hours_end)
+                         - timedelta(minutes=1)).time()
             appointments = appointments.filter(
-                    date_time__time__range=(
-                        self.hours_start,
-                        time(self.hours_end.hour, self.hours_end.minute-1)))
+                    date_time__time__range=(self.hours_start, hours_end))
 
         return appointments.count() > 0
 
@@ -170,7 +173,9 @@ class Appointment(models.Model):
                               default=FREE, blank=True, null=True)
 
     def __str__(self):
-        return '{}'.format(self.date_time)
+        return '{} {}'.format(
+            self.provider,
+            timezone.localtime(self.date_time))
 
     def available(self):
         return not self.user

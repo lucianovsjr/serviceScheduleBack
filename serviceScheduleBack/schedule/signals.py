@@ -16,6 +16,7 @@ def save_appointment(sender, instance, **kwargs):
     Cancelamento de horário todos os outros que foram ocupados por este
     devem ficar livres.
     '''
+
     if not instance.status == Appointment.BUSY:
         IS_FREE = instance.status == Appointment.FREE
         IS_CANCELED = IS_FREE and instance.canceled_at is not None
@@ -36,7 +37,7 @@ def save_appointment(sender, instance, **kwargs):
             date_time__time__range=(
                 timezone.localtime(instance.date_time).time(),
                 timezone.localtime((instance.date_time +
-                                    timedelta(minutes=instance.time_range))
+                                    timedelta(minutes=instance.time_range-1))
                                    ).time()
             ),
             status=STATUS_FILTER
