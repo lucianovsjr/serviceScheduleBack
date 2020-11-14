@@ -213,10 +213,33 @@ class Appointment(models.Model):
             date_time__time__range=(
                 timezone.localtime(self.date_time).time(),
                 timezone.localtime(self.date_time +
-                                   timedelta(minutes=self.time_range)
+                                   timedelta(minutes=self.time_range-1)
                                    ).time()
             ),
             status=self.SCHEDULED
         )
 
         return appointments.count() > 0
+
+
+class CanceledAppointment(models.Model):
+    schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE,
+                                 blank=True, null=True)
+    provider = models.ForeignKey('auth.User', verbose_name='Provider',
+                                 on_delete=models.CASCADE,
+                                 related_name='canceled_appointment_provider')
+    user = models.ForeignKey('auth.User', verbose_name='Usuário',
+                             on_delete=models.CASCADE,
+                             related_name='canceled_appointment_user',
+                             null=True, blank=True)
+    company = models.ForeignKey(Company, on_delete=models.SET_NULL, null=True)
+    date_time = models.DateTimeField('Data')
+    canceled_at = models.DateTimeField(null=True, blank=True)
+    loose_client = models.CharField('Cliente avulso', max_length=30,
+                                    blank=True)
+    time_range = models.IntegerField('Tempo de atendimento', default=0)
+
+    def __str__(self):
+        return '{} {}'.format(
+            self.provider,
+            timezone.localtime(self.date_time))

@@ -4,7 +4,21 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
-from .models import Appointment
+from .models import Appointment, CanceledAppointment
+
+
+def canceled_appointment(instance):
+    canceled = CanceledAppointment(
+        provider=instance.provider,
+        time_range=instance.time_range,
+        date_time=instance.date_time,
+        schedule=instance.schedule,
+        company=instance.company,
+        user=instance.user,
+        canceled_at=instance.canceled_at,
+        loose_client=instance.loose_client
+    )
+    canceled.save()
 
 
 @receiver(post_save, sender=Appointment)
@@ -21,13 +35,13 @@ def save_appointment(sender, instance, **kwargs):
         IS_FREE = instance.status == Appointment.FREE
         IS_CANCELED = IS_FREE and instance.canceled_at is not None
         IS_SCHEDULED = instance.status == Appointment.SCHEDULED
-        STATUS_SET = Appointment.BUSY
+        status_set = Appointment.BUSY
 
         if IS_SCHEDULED:
             STATUS_FILTER = Appointment.FREE
         elif IS_CANCELED:
             STATUS_FILTER = Appointment.BUSY
-            STATUS_SET = Appointment.FREE
+            status_set = Appointment.FREE
         else:
             STATUS_FILTER = Appointment.SCHEDULED
 
@@ -45,8 +59,11 @@ def save_appointment(sender, instance, **kwargs):
 
         if IS_SCHEDULED or IS_CANCELED:
             for appointment in appointments:
-                appointment.status = STATUS_SET
+                appointment.status = status_set
                 appointment.save()
         elif appointments:
-            instance.status = STATUS_SET
+            instance.status = status_set
             instance.save()
+
+        if IS_CANCELED:
+            canceled_appointment(instance)
