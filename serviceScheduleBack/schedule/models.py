@@ -19,29 +19,30 @@ class Schedule(models.Model):
                                           self.hours_start, self.date_end,
                                           self.hours_end)
 
-    def create_appointments(self):
+    def base_create_appointments(
+     self, datetime_start, datetime_end, hours_start, hours_end):
         tzinfo = timezone.localtime().tzinfo
         date_time = datetime(
-            self.date_start.year,
-            self.date_start.month,
-            self.date_start.day,
-            self.hours_start.hour,
-            self.hours_start.minute,
+            datetime_start.year,
+            datetime_start.month,
+            datetime_start.day,
+            hours_start.hour,
+            hours_start.minute,
             tzinfo=tzinfo
         )
         date_time_end = datetime(
-            self.date_end.year,
-            self.date_end.month,
-            self.date_end.day,
-            self.hours_end.hour,
-            self.hours_end.minute,
+            datetime_end.year,
+            datetime_end.month,
+            datetime_end.day,
+            hours_end.hour,
+            hours_end.minute,
             tzinfo=tzinfo
         )
 
         minutes = timedelta(minutes=self.time_range)
         day = timedelta(days=1)
-        hour_start = self.hours_start.hour
-        minute_start = self.hours_start.minute
+        hour_start = hours_start.hour
+        minute_start = hours_start.minute
 
         while (date_time < date_time_end):
             appointment = Appointment(
@@ -54,13 +55,17 @@ class Schedule(models.Model):
             appointment.save()
 
             date_time += minutes
-            if not (date_time.time() >= self.hours_start
-                    and date_time.time() < self.hours_end):
+            if not (date_time.time() >= hours_start
+                    and date_time.time() < hours_end):
                 date_time += day
                 date_time = date_time.replace(
                     hour=hour_start,
                     minute=minute_start
                 )
+
+    def create_appointments(self):
+        self.base_create_appointments(self.date_start, self.date_end,
+                                      self.hours_start, self.hours_end)
 
     def appointments_exists(self):
         appointments = Appointment.objects.filter(
@@ -70,6 +75,179 @@ class Schedule(models.Model):
         )
 
         return appointments.count() > 0
+
+    def check_update_start(self, date, hour):
+        # Menor: Conflito com outra agenda
+        # Maior: Agenda com horário marcado
+        appointments = None
+        appointments_delete = None
+        appointments_create = {
+            'date_start': None, 'date_end': None,
+            'hours_start': None, 'hours_end': None
+        }
+
+        if date == self.date_start and hour == self.hours_start:
+            return {
+                'check': True,
+                'appointments_delete': appointments_delete,
+                'appointments_create': appointments_create
+            }
+
+        elif date == self.date_start and hour < self.hours_start:
+            appointments = Appointment.objects.filter(
+                provider=self.provider,
+                date_time__date=self.date_start,
+                date_time__time__range=(hour, self.hours_start)
+            )
+            appointments_create['date_start'] = self.date_start
+            appointments_create['date_end'] = self.date_start
+            appointments_create['hours_start'] = hour
+            appointments_create['hours_end'] = self.hours_start
+
+        elif date < self.date_start and hour == self.hours_start:
+            appointments = Appointment.objects.filter(
+                provider=self.provider,
+                date_time__date__range=(date, self.date_start),
+                date_time__time=self.hours_start
+            )
+            appointments_create['date_start'] = date
+            appointments_create['date_end'] = self.date_start
+            appointments_create['hours_start'] = self.hours_start
+            appointments_create['hours_end'] = self.hours_start
+
+        elif date < self.date_start and hour < self.hours_start:
+            appointments = Appointment.objects.filter(
+                provider=self.provider,
+                date_time__date__range=(date, self.date_start),
+                date_time__time__range=(hour, self.hours_start)
+            )
+            appointments_create['date_start'] = date
+            appointments_create['date_end'] = self.date_start
+            appointments_create['hours_start'] = hour
+            appointments_create['hours_end'] = self.hours_start
+
+        elif date == self.date_start and hour > self.hours_start:
+            appointments_delete = Appointment.objects.filter(
+                provider=self.provider,
+                status=Appointment.SCHEDULED,
+                date_time__date=self.date_start,
+                date_time__time__range=(self.hours_start, hour)
+            )
+            appointments = appointments_delete.filter(
+                status=Appointment.SCHEDULED,
+            )
+
+        elif date > self.date_start and hour == self.hours_start:
+            appointments_delete = Appointment.objects.filter(
+                provider=self.provider,
+                date_time__date__range=(self.date_start, date),
+                date_time__time=self.hours_start
+            )
+            appointments = appointments_delete.filter(
+                status=Appointment.SCHEDULED,
+            )
+
+        elif date > self.date_start and hour > self.hours_start:
+            appointments_delete = Appointment.objects.filter(
+                provider=self.provider,
+                date_time__date__range=(self.date_start, date),
+                date_time__time__range=(self.hours_start, hour)
+            )
+            appointments = appointments_delete.filter(
+                status=Appointment.SCHEDULED,
+            )
+
+        return {
+            'check': appointments.count() == 0 if appointments else True,
+            'appointments_delete': appointments_delete,
+            'appointments_create': appointments_create
+        }
+
+    def check_update_end(self, date, hour):
+        # Menor: Agenda com horário marcado
+        # Maior: Conflito com outra agenda
+        appointments = None
+        appointments_delete = None
+        appointments_create = {
+            'date_start': None, 'date_end': None,
+            'hours_start': None, 'hours_end': None
+        }
+
+        if date == self.date_end and hour == self.hours_end:
+            return {
+                'check': True,
+                'appointments_delete': appointments_delete,
+                'appointments_create': appointments_create
+            }
+
+        elif date == self.date_end and hour < self.hours_end:
+            appointments_delete = Appointment.objects.filter(
+                provider=self.provider,
+                date_time__date=self.date_end,
+                date_time__time__range=(hour, self.hours_end)
+            )
+            appointments = appointments_delete.filter(
+                status=Appointment.SCHEDULED,
+            )
+
+        elif date < self.date_end and hour == self.hours_end:
+            appointments_delete = Appointment.objects.filter(
+                provider=self.provider,
+                date_time__date__range=(date, self.date_end),
+                date_time__time=self.hours_end
+            )
+            appointments = appointments_delete.filter(
+                status=Appointment.SCHEDULED,
+            )
+
+        elif date < self.date_end and hour < self.hours_end:
+            appointments_delete = Appointment.objects.filter(
+                provider=self.provider,
+                date_time__date__range=(date, self.date_end),
+                date_time__time__range=(hour, self.hours_end)
+            )
+            appointments = appointments_delete.filter(
+                status=Appointment.SCHEDULED,
+            )
+
+        elif date == self.date_end and hour > self.hours_end:
+            appointments = Appointment.objects.filter(
+                provider=self.provider,
+                date_time__date=self.date_end,
+                date_time__time__range=(self.hours_end, hour)
+            )
+            appointments_create['date_start'] = self.date_end
+            appointments_create['date_end'] = self.date_end
+            appointments_create['hours_start'] = self.hours_end
+            appointments_create['hours_end'] = hour
+
+        elif date > self.date_end and hour == self.hours_end:
+            appointments = Appointment.objects.filter(
+                provider=self.provider,
+                date_time__date__range=(self.date_end, date),
+                date_time__time=self.hours_end
+            )
+            appointments_create['date_start'] = self.date_end
+            appointments_create['date_end'] = date
+            appointments_create['hours_start'] = self.hours_end
+            appointments_create['hours_end'] = self.hours_end
+
+        elif date > self.date_end and hour > self.hours_end:
+            appointments = Appointment.objects.filter(
+                provider=self.provider,
+                date_time__date__range=(self.date_end, date),
+                date_time__time__range=(self.hours_end, hour)
+            )
+            appointments_create['date_start'] = self.date_end
+            appointments_create['date_end'] = date
+            appointments_create['hours_start'] = self.hours_end
+            appointments_create['hours_end'] = hour
+
+        return {
+            'check': appointments.count() == 0 if appointments else True,
+            'appointments_delete': appointments_delete,
+            'appointments_create': appointments_create
+        }
 
 
 class Event(models.Model):

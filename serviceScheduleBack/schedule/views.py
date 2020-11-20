@@ -46,6 +46,55 @@ class ScheduleViewSet(viewsets.ModelViewSet):
             headers=headers
         )
 
+    def update(self, request, pk):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+
+        if serializer.is_valid(raise_exception=True):
+            headers = self.get_success_headers(serializer.validated_data)
+            check_start = instance.check_update_start(
+                            serializer.validated_data['date_start'],
+                            serializer.validated_data['hours_start']
+                        )
+            check_end = instance.check_update_end(
+                            serializer.validated_data['date_end'],
+                            serializer.validated_data['hours_end']
+                        )
+            if not check_start['check'] or not check_end['check']:
+                return Response(
+                    {'msg': 'Horário com conflito ou cliente já agendado.'},
+                    status=status.HTTP_202_ACCEPTED,
+                    headers=headers
+                )
+
+            if check_start['appointments_delete']:
+                check_start['appointments_delete'].delete()
+            if check_end['appointments_delete']:
+                check_end['appointments_delete'].delete()
+
+            if None not in check_start['appointments_create'].values():
+                instance.base_create_appointments(
+                    check_start['appointments_create']['date_start'],
+                    check_start['appointments_create']['date_end'],
+                    check_start['appointments_create']['hours_start'],
+                    check_start['appointments_create']['hours_end']
+                )
+            if None not in check_end['appointments_create'].values():
+                instance.base_create_appointments(
+                    check_end['appointments_create']['date_start'],
+                    check_end['appointments_create']['date_end'],
+                    check_end['appointments_create']['hours_start'],
+                    check_end['appointments_create']['hours_end']
+                )
+
+            serializer.save()
+
+            return Response(
+                serializer.validated_data,
+                status=status.HTTP_201_CREATED,
+                headers=headers
+            )
+
 
 class EventViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.EventSerializer
