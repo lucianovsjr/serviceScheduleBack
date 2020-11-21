@@ -15,7 +15,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Schedule.objects.filter(
-            provider=self.request.user).order_by('date_start', 'hours_start')
+            provider=self.request.user).order_by('-date_start', '-hours_start')
 
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -62,7 +62,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
                         )
             if not check_start['check'] or not check_end['check']:
                 return Response(
-                    {'msg': 'Horário com conflito ou cliente já agendado.'},
+                    {'msg': 'Horário com conflito ou existe cliente(s) agendado(s).'},
                     status=status.HTTP_202_ACCEPTED,
                     headers=headers
                 )
@@ -94,6 +94,16 @@ class ScheduleViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED,
                 headers=headers
             )
+
+    def destroy(self, request, pk):
+        instance = self.get_object()
+        if not instance.check_delete():
+            return Response(
+                {'msg': 'Agenda com cliente(s) agendado(s)'},
+                status=status.HTTP_202_ACCEPTED
+            )
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class EventViewSet(viewsets.ModelViewSet):
