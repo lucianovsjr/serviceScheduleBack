@@ -60,6 +60,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
                             serializer.validated_data['date_end'],
                             serializer.validated_data['hours_end']
                         )
+
             if not check_start['check'] or not check_end['check']:
                 return Response(
                     {'msg': 'Horário com conflito ou existe cliente(s) agendado(s).'},
@@ -69,23 +70,31 @@ class ScheduleViewSet(viewsets.ModelViewSet):
 
             if check_start['appointments_delete']:
                 check_start['appointments_delete'].delete()
+            if check_start['appointments_delete_fix_day']:
+                check_start['appointments_delete_fix_day'].delete()
             if check_end['appointments_delete']:
                 check_end['appointments_delete'].delete()
+            if check_end['appointments_delete_fix_day']:
+                check_end['appointments_delete_fix_day'].delete()
 
-            if None not in check_start['appointments_create'].values():
-                instance.base_create_appointments(
-                    check_start['appointments_create']['date_start'],
-                    check_start['appointments_create']['date_end'],
-                    check_start['appointments_create']['hours_start'],
-                    check_start['appointments_create']['hours_end']
-                )
-            if None not in check_end['appointments_create'].values():
-                instance.base_create_appointments(
-                    check_end['appointments_create']['date_start'],
-                    check_end['appointments_create']['date_end'],
-                    check_end['appointments_create']['hours_start'],
-                    check_end['appointments_create']['hours_end']
-                )
+            for appointment_create in (
+                check_start['appointments_create'],
+                check_end['appointments_create']
+             ):
+                if None not in appointment_create.values():
+                    instance.base_create_appointments(
+                        appointment_create['date_start'],
+                        appointment_create['date_end'],
+                        appointment_create['hours_start'],
+                        appointment_create['hours_end']
+                    )
+                if None not in appointment_create['fix_day'].values():
+                    instance.base_create_appointments(
+                        appointment_create['fix_day']['date_start'],
+                        appointment_create['fix_day']['date_end'],
+                        appointment_create['fix_day']['hours_start'],
+                        appointment_create['fix_day']['hours_end']
+                    )
 
             serializer.save()
 
