@@ -519,6 +519,10 @@ class Appointment(models.Model):
     provider = models.ForeignKey('auth.User', verbose_name='Provider',
                                  on_delete=models.CASCADE,
                                  related_name='appointment_provider')
+    provider_busy = models.ForeignKey('auth.User', verbose_name='Provider Busy',
+                                      on_delete=models.CASCADE,
+                                      related_name='appointment_provider_busy',
+                                      default=None, null=True, blank=True)
     user = models.ForeignKey('auth.User', verbose_name='Usuário',
                              on_delete=models.CASCADE,
                              related_name='appointment_user',
@@ -534,6 +538,8 @@ class Appointment(models.Model):
                               blank=True, null=True)
     status = models.CharField(max_length=1, choices=STATUS_CHOICES,
                               default=FREE, blank=True, null=True)
+    send_notification = models.BooleanField(verbose_name='Enviar notificação',
+                                            default=False, null=True, blank=True)
 
     def __str__(self):
         return '{} {}'.format(

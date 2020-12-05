@@ -380,3 +380,47 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             return JsonResponse(serializer.data)
 
         return JsonResponse(status=400)
+
+
+class NotificationBusyListView(generics.ListAPIView):
+    serializer_class = serializers.NotificationAppointmentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request):
+        appointments = Appointment.objects.filter(
+            provider=self.request.user,
+            send_notification=True
+        ).order_by('date_time')
+
+        messages = []
+        for appointment in appointments:
+            if appointment.status == Appointment.BUSY:
+                messages.append({
+                    'message': ' '.join([
+                        'Horário',
+                        timezone.localtime(appointment.date_time).strftime(
+                            '%d/%m/%Y %H:%M'),
+                        'foi reservado para a agenda do(a)',
+                        appointment.provider_busy.get_full_name()
+                    ])
+                })
+            elif appointment.status == Appointment.FREE:
+                messages.append({
+                    'message': ' '.join([
+                        'Horário',
+                        timezone.localtime(appointment.date_time).strftime(
+                            '%d/%m/%Y %H:%M'),
+                        'foi liberado da agenda do(a)',
+                        appointment.provider_busy.get_full_name()
+                    ])
+                })
+                appointment.provider_busy = None
+            appointment.send_notification = False
+            appointment.save()
+
+        serializer = serializers.NotificationAppointmentSerializer(
+            messages,
+            many=True
+        )
+
+        return JsonResponse(serializer.data, safe=False)

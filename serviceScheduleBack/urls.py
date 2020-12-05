@@ -22,7 +22,7 @@ from serviceScheduleBack.access.views import (
 from serviceScheduleBack.schedule.views import (
     ScheduleViewSet, EventViewSet, ProviderMonthViewSet,
     AppointmentMonthViewSet, AppointmentUpdateStatusViewSet,
-    MyAppointmentViewSet, AppointmentViewSet
+    MyAppointmentViewSet, AppointmentViewSet, NotificationBusyListView
 )
 
 
@@ -52,6 +52,8 @@ urlpatterns = [
 
     path('api/myappointments/', MyAppointmentViewSet.as_view(),
          name='my_appointments'),
+
+    path('api/notification-busy/', NotificationBusyListView.as_view(), name='notification_busy'),
 
     path('api/token', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh', TokenRefreshView.as_view(),

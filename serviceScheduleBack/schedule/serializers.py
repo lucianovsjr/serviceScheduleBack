@@ -59,3 +59,7 @@ class MyAppointmentSerializer(serializers.Serializer):
     provider_id = serializers.IntegerField(default=0)
     provider_name = serializers.CharField(max_length=30)
     image_name = serializers.CharField(max_length=50)
+
+
+class NotificationAppointmentSerializer(serializers.Serializer):
+    message = serializers.CharField(max_length=200)

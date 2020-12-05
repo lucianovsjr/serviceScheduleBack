@@ -36,12 +36,15 @@ def save_appointment(sender, instance, **kwargs):
         IS_CANCELED = IS_FREE and instance.canceled_at is not None
         IS_SCHEDULED = instance.status == Appointment.SCHEDULED
         status_set = Appointment.BUSY
+        provider_set = None
 
         if IS_SCHEDULED:
             STATUS_FILTER = Appointment.FREE
+            provider_set = instance.provider
         elif IS_CANCELED:
             STATUS_FILTER = Appointment.BUSY
             status_set = Appointment.FREE
+            provider_set = instance.provider_busy
         else:
             STATUS_FILTER = Appointment.SCHEDULED
 
@@ -60,9 +63,13 @@ def save_appointment(sender, instance, **kwargs):
         if IS_SCHEDULED or IS_CANCELED:
             for appointment in appointments:
                 appointment.status = status_set
+                appointment.provider_busy = provider_set
+                appointment.send_notification = True
                 appointment.save()
         elif appointments:
             instance.status = status_set
+            instance.provider_busy = provider_set
+            instance.send_notification = True
             instance.save()
 
         if IS_CANCELED:
